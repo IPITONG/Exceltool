@@ -20,50 +20,36 @@ document.getElementById('process-file').addEventListener('click', async () => {
     const variantData = [];
     variantSheet.eachRow((row, rowIndex) => {
         if (rowIndex > 0) {
-            variantData.push(row.getCell(1).value);
+            variantData.push(row.getCell(1).value); 
         }
     });
 
-    let insertPosition = mainSheet.rowCount + 1;
+    let insertPosition = mainSheet.rowCount + 1;  
 
     for (let i = 0; i < variantData.length; i++) {
         const variant = variantData[i];
-        const titleRowIndex = 2 + Math.floor(i / 2);
-        const title = mainSheet.getCell(`B${titleRowIndex}`).value;
+        const rowToCopy = i % 2 === 0 ? 2 : 3;  
 
-        let rowValues = mainSheet.getRow(2).values;
-        let newRow = mainSheet.insertRow(insertPosition);
+        const rowValues = mainSheet.getRow(rowToCopy).values;
+        const newRow = mainSheet.insertRow(insertPosition);
 
         const currentHandle = `Handle ${i + 1}`;
-        newRow.getCell(1).value = currentHandle;
-        newRow.getCell(2).value = title;
+        newRow.getCell(1).value = currentHandle;  
+
+        newRow.getCell(2).value = mainSheet.getCell(`B2`).value;  
 
         rowValues.forEach((value, index) => {
             if (typeof value === 'string' && value.includes('[variant]')) {
-                newRow.getCell(index).value = value.replace('[variant]', variant);
-            } else {
-                newRow.getCell(index).value = value;
+                const updatedValue = value.replace('[variant]', variant);
+                newRow.getCell(index).value = updatedValue;  
+            } else if (index !== 2) { 
+                newRow.getCell(index).value = value;  
             }
         });
 
-        insertPosition++;
-
-        rowValues = mainSheet.getRow(3).values;
-        newRow = mainSheet.insertRow(insertPosition);
-
-        newRow.getCell(1).value = currentHandle;
-        newRow.getCell(2).value = title;
-
-        rowValues.forEach((value, index) => {
-            if (typeof value === 'string' && value.includes('[variant]')) {
-                newRow.getCell(index).value = value.replace('[variant]', variant);
-            } else {
-                newRow.getCell(index).value = value;
-            }
-        });
-
-        insertPosition++;
+        insertPosition++;  
     }
+
 
     mainSheet.spliceRows(2, 2);
 
@@ -93,20 +79,23 @@ document.getElementById('sort-titles').addEventListener('click', async () => {
         return;
     }
 
-    let previousTitle = mainSheet.getCell('B2').value;
-    let previousHandle = mainSheet.getCell('A2').value;
+  
+    let previousTitle = mainSheet.getCell('B2').value;  
+    let previousHandle = mainSheet.getCell('A2').value; 
 
-    let rowIndex = 2;
-    while (rowIndex <= mainSheet.rowCount) {
-        if (rowIndex % 2 === 0) {
-            mainSheet.getRow(rowIndex).getCell(1).value = previousHandle;
-            mainSheet.getRow(rowIndex).getCell(2).value = previousTitle;
-        } else {
-            previousHandle = mainSheet.getRow(rowIndex).getCell(1).value;
-            previousTitle = mainSheet.getRow(rowIndex).getCell(2).value;
+
+    mainSheet.eachRow((row, rowIndex) => {
+        if (rowIndex > 2) { 
+            if (rowIndex % 2 === 1) {  
+    
+                previousHandle = row.getCell(1).value;  
+                previousTitle = row.getCell(2).value;  
+            } else {  
+                row.getCell(1).value = previousHandle;  
+                row.getCell(2).value = previousTitle;
+            }
         }
-        rowIndex++;
-    }
+    });
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
